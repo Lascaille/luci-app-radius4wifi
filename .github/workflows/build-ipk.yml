@@ -15,7 +15,20 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-
+     
+      - name: Update Makefile Version
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+            
+            # Find and update Makefile wherever it lives in the repo
+            MAKEFILE_PATH=$(find . -maxdepth 2 -name Makefile)
+            if [ -n "$MAKEFILE_PATH" ]; then
+              sed -i "s/^PKG_VERSION:=.*/PKG_VERSION:=${VERSION}/" "$MAKEFILE_PATH"
+              echo "Updated $MAKEFILE_PATH PKG_VERSION to ${VERSION}"
+            fi
+          fi
+      
       - name: Build Package
         run: |
           # Extract version from tag name (e.g., v1.0.5 -> 1.0.5) or default to 1.0.0
