@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-radius4wifi
-PKG_VERSION:=1.0.4
+PKG_VERSION:=1.0.0
 PKG_RELEASE:=1
 
 PKG_MAINTAINER:=Community
@@ -14,7 +14,7 @@ define Package/luci-app-radius4wifi
   CATEGORY:=LuCI
   SUBMENU:=3. Applications
   TITLE:=Minimal EAP-TLS RADIUS Server & Cert Manager
-  DEPENDS:=+freeradius3 +freeradius3-mod-eap +freeradius3-mod-eap-tls +luci-base +openssl-util
+  DEPENDS:=+freeradius3 +freeradius3-mod-eap +freeradius3-mod-eap-tls +luci-base +openssl-util +luci-compat
   USERID:=radius4wifi=200:radius4wifi=200
   PKGARCH:=all
 endef
