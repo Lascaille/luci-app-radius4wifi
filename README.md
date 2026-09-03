@@ -2,13 +2,14 @@ Simple WPA2-Enterprise provisioning with OpenWRT when using a separate WIFI AP.
 
 Detects an existing freeradius installation and doesn't alter it.
 
-Configures a custom freeradius instance (radius4wifi) on a custom port with separate config.
+Provisions a dedicated freeradius instance (radius4wifi) on a separate port with separated config.
 
-Configures a custom certificate directory and initialises PKI certs.
+Provisions a dedicated root CA and PKI store.
 
-Includes LUCI UI to make/delete/revoke certificates and enter the WIFI AP IP (range) etc.
+Includes LUCI UI for configuration and certificate management.
 
-Install the package, go to the config page, enter the IP of your AP. Copy the secret and the port.
-Go to the AP config page and confgiure WPA2-Enterprise and enter the IP of the router, the port and the secret.
+Install the package, go to the config page, enter the IP of your AP(s).
+Make note of the secret and the port because the APs will ask for them.
+Go to your AP's web config page, select WPA2-Enterprise, enter the IP of the router, the port and the secret.
 Make client certificates on the AP config page and install them on the relevant mobile devices.
-That's basically it.
+Connect the mobile device to the ssid, select EAP-TLS, no username, for identity select the relevant certificate, trust the certificate if prompted and you're set.
