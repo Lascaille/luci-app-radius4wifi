@@ -21,7 +21,7 @@ Package: ${PKG_NAME}
 Version: ${PKG_VER}
 Architecture: all
 Maintainer: Lascaille
-Depends: freeradius3, freeradius3-mod-eap, freeradius3-mod-eap-tls, luci-base, openssl-util
+Depends: freeradius3, freeradius3-mod-eap, freeradius3-mod-eap-tls, luci-base, luci-compat, openssl-util
 Section: luci
 Category: LuCI
 Title: LuCI support for RADIUS4WiFi
