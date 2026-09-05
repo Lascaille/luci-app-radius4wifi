@@ -1,4 +1,0 @@
-config server 'main'
-	option secret ''
-	list client_net '192.168.1.2'
-	option port '18120'
