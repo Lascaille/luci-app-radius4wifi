@@ -1,0 +1,15 @@
+eap {
+    default_eap_type = tls
+
+    tls-config conf_tls {
+        private_key_file = ${certdir}/server.key
+        certificate_file = ${certdir}/server.crt
+        ca_file = ${certdir}/ca.crt
+#        dh_file = ${certdir}/dh
+        tls_min_version = "1.2"
+    }
+
+    tls {
+        tls = conf_tls
+    }
+}
