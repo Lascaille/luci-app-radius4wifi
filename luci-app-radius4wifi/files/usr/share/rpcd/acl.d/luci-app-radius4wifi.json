@@ -1,0 +1,20 @@
+{
+  "luci-app-radius4wifi": {
+    "description": "Grant access to Radius4WiFi management",
+    "read": {
+      "uci": [ "radius4wifi" ],
+      "file": {
+        "/etc/radius4wifi/certs/*": [ "read", "list" ]
+      }
+    },
+    "write": {
+      "uci": [ "radius4wifi" ],
+      "file": {
+        "/etc/radius4wifi/certs/*": [ "write", "remove" ]
+      },
+      "exec": {
+        "/usr/sbin/radius4wifi-cert": [ "exec" ]
+      }
+    }
+  }
+}

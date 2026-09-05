@@ -1,0 +1,46 @@
+#!/bin/sh
+ACTION="$1"
+NAME="$2"
+
+case "$ACTION" in
+  generate)
+    if [ -z "$NAME" ] || ! echo "$NAME" | grep -qE '^[a-zA-Z0-9_-]+$'; then
+      echo "Invalid label" >&2
+      exit 1
+    fi
+    DATE_STR=$(date +%Y%m%d)
+    FULL_CN="r4w-${DATE_STR}-${NAME}"
+    PASS=$(head /dev/urandom | tr -dc 'a-z' | fold -w 8 | head -n 1)
+    PKI="/etc/radius4wifi/certs/pki"
+    OUT="/etc/radius4wifi/certs"
+
+    mkdir -p "$PKI" "$OUT"
+
+    if [ ! -f "$PKI/ca.crt" ]; then
+      /etc/init.d/radius4wifi start >/dev/null 2>&1
+    fi
+
+    openssl ecparam -name prime256v1 -genkey -out "$PKI/$FULL_CN.key" && \
+    openssl req -new -key "$PKI/$FULL_CN.key" -out "$PKI/$FULL_CN.csr" -subj "/CN=$FULL_CN" -nodes && \
+    openssl x509 -req -in "$PKI/$FULL_CN.csr" -CA "$PKI/ca.crt" -CAkey "$PKI/ca.key" -CAcreateserial -out "$PKI/$FULL_CN.crt" -days 3650 && \
+    openssl pkcs12 -export -out "$OUT/$FULL_CN.p12" -inkey "$PKI/$FULL_CN.key" -in "$PKI/$FULL_CN.crt" -certfile "$PKI/ca.crt" -passout "pass:$PASS" && \
+    printf '%s' "$PASS" > "$OUT/$FULL_CN.pass" && \
+    chown radius4wifi:radius4wifi "$OUT/$FULL_CN.p12" "$OUT/$FULL_CN.pass" 2>/dev/null
+    ;;
+
+  delete)
+    if [ -z "$NAME" ] || ! echo "$NAME" | grep -qE '^[a-zA-Z0-9_-]+$'; then
+      echo "Invalid label" >&2
+      exit 1
+    fi
+    rm -f "/etc/radius4wifi/certs/$NAME.p12" \
+          "/etc/radius4wifi/certs/$NAME.pass" \
+          "/etc/radius4wifi/certs/pki/$NAME.key" \
+          "/etc/radius4wifi/certs/pki/$NAME.crt" \
+          "/etc/radius4wifi/certs/pki/$NAME.csr"
+    ;;
+  *)
+    echo "Usage: $0 {generate|delete} <label>" >&2
+    exit 1
+    ;;
+esac
