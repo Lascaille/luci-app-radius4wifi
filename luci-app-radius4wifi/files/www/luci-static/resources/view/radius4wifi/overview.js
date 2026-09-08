@@ -57,6 +57,31 @@ load: function() {
     o = s.option(form.Value, 'secret', _('Shared Secret'));
     o.password = true;
     o.rmempty = false;
+    
+    // ------------------------------------------------------------------
+    // CA Certificate Download Section
+    // ------------------------------------------------------------------
+    s = m.section(form.NamedSection, 'main', 'radius4wifi', _('Certificate Authority (CA)'),
+      _('Download the Root CA certificate to manually trust the RADIUS server on Windows and legacy devices.'));
+
+    var dlCaBtn = s.option(form.Button, '_download_ca', _('CA Certificate'));
+    dlCaBtn.inputtitle = _('Download CA (.crt)');
+    dlCaBtn.inputstyle = 'action';
+    dlCaBtn.onclick = function() {
+      return fs.read('/etc/radius4wifi/pki/ca.pem').then(function(content) {
+        var blob = new Blob([content], { type: 'application/x-x509-ca-cert' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'Radius4WiFi-CA.crt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }).catch(function(err) {
+        ui.addNotification(null, E('p', _('Error reading CA certificate: ') + (err.message || err)), 'error');
+      });
+    };
 
     // Certificate Generator Section
     s = m.section(form.NamedSection, '_cert_gen', 'cert_gen', _('Generate Client Certificate'),
@@ -98,6 +123,8 @@ load: function() {
         }
       });
     };
+    
+
 
     // Issued Certificates Table
     s = m.section(form.TableSection, '_certs', _('Issued Certificates'));
