@@ -1,0 +1,13 @@
+{
+  "admin/services/radius4wifi": {
+    "title": "Radius4WiFi",
+    "order": 60,
+    "action": {
+      "type": "view",
+      "path": "radius4wifi/overview"
+    },
+    "depends": {
+      "acl": [ "luci-app-radius4wifi" ]
+    }
+  }
+}

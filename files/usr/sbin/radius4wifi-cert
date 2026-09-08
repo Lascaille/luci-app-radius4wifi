@@ -1,0 +1,81 @@
+#!/bin/sh
+
+PKI_DIR="/etc/radius4wifi/pki"
+CERTS_DIR="/etc/radius4wifi/certs"
+
+mkdir -p "$PKI_DIR" "$CERTS_DIR"
+
+init_pki() {
+    if [ ! -f "$PKI_DIR/ca.key" ] || [ ! -f "$PKI_DIR/ca.pem" ]; then
+        openssl ecparam -name prime256v1 -genkey -out "$PKI_DIR/ca.key"
+        openssl req -x509 -new -nodes -key "$PKI_DIR/ca.key" -sha256 -out "$PKI_DIR/ca.pem" -days 3650 -subj "/CN=Radius4WiFi CA"
+        chmod 600 "$PKI_DIR/ca.key"
+    fi
+
+    if [ ! -f "$PKI_DIR/server.key" ] || [ ! -f "$PKI_DIR/server.pem" ]; then
+        openssl ecparam -name prime256v1 -genkey -out "$PKI_DIR/server.key"
+        openssl req -new -key "$PKI_DIR/server.key" -out "$PKI_DIR/server.csr" -subj "/CN=Radius4WiFi Server" -nodes
+        openssl x509 -req -in "$PKI_DIR/server.csr" -CA "$PKI_DIR/ca.pem" -CAkey "$PKI_DIR/ca.key" -CAcreateserial -out "$PKI_DIR/server.pem" -days 3650
+        chmod 600 "$PKI_DIR/server.key"
+    fi
+}
+
+case "$1" in
+    init)
+        init_pki
+        ;;
+
+    generate)
+        LABEL="$2"
+
+        # Validate input label
+        case "$LABEL" in
+            ""|*[!a-zA-Z0-9_-]*)
+                echo "Invalid Device Label. Use only letters, numbers, hyphens, and underscores" >&2
+                exit 1
+                ;;
+        esac
+
+        # Match the r4w-YYYYMMDD-label naming convention described in overview.js
+        DATE=$(date +%Y%m%d)
+        CERT_NAME="r4w-${DATE}-${LABEL}"
+
+        # Guarantee CA and Server certs exist before issuing client certs
+        init_pki
+
+        # Generate a random 8-character passphrase for the PKCS#12 bundle
+        PASS=$(head /dev/urandom | tr -dc a-z | head -c 8)
+        echo "$PASS" > "$CERTS_DIR/$CERT_NAME.pass"
+
+        # Generate Client Key & CRT
+        openssl ecparam -name prime256v1 -genkey -out "$CERTS_DIR/$CERT_NAME.key"
+        openssl req -new -key "$CERTS_DIR/$CERT_NAME.key" -out "$CERTS_DIR/$CERT_NAME.csr" -subj "/CN=$CERT_NAME" -nodes
+        openssl x509 -req -in "$CERTS_DIR/$CERT_NAME.csr" -CA "$PKI_DIR/ca.pem" -CAkey "$PKI_DIR/ca.key" -CAcreateserial -out "$CERTS_DIR/$CERT_NAME.crt" -days 365
+
+        # Build PKCS#12 bundle for direct import into iOS/Android/Windows
+        openssl pkcs12 -export -out "$CERTS_DIR/$CERT_NAME.p12" \
+            -inkey "$CERTS_DIR/$CERT_NAME.key" \
+            -in "$CERTS_DIR/$CERT_NAME.crt" \
+            -certfile "$PKI_DIR/ca.pem" \
+            -passout "pass:$PASS"
+
+        chmod 600 "$CERTS_DIR/$CERT_NAME.key" "$CERTS_DIR/$CERT_NAME.pass"
+        ;;
+
+    delete)
+        NAME="$2"
+        if [ -n "$NAME" ]; then
+            rm -f "$CERTS_DIR/$NAME.key" "$CERTS_DIR/$NAME.csr" "$CERTS_DIR/$NAME.crt" "$CERTS_DIR/$NAME.p12" "$CERTS_DIR/$NAME.pass"
+        fi
+        ;;
+
+    reset)
+        rm -rf "$PKI_DIR"/* "$CERTS_DIR"/*
+        init_pki
+        ;;
+
+    *)
+        echo "Usage: $0 {init|generate <label>|delete <name>|reset}" >&2
+        exit 1
+        ;;
+esac
